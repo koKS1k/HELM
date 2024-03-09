@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.postgres.name}}-deployment
+spec: 
+  replicas: {{.Values.postgres.replicas}}
+  selector:
+    matchLabels:
+      components: {{.Values.postgres.postgres}}
+  template:
+    metadata:
+      labels:  
+        components: {{.Values.postgres.postgres}} #по лэйблу можно, например, привязать сервис (можно любой "asdf: terg")
+    spec:
+      containers:
+        - name: {{.Values.postgres.name}}
+          image: "{ .Values.api.image }}:{{ .Values.postgres.version }}"
+          imagePullPolicy: Always
+          ports:  
+            - containerPort: {{.Values.postgres.port}}
+          env:
+            {{- range .Values.postgres.envs }}
+            {{- $data := dict "name" $.Values.postgres.name "env" .}} #dict  указывает что это словарь ключ значение ключи "name" "env".
+            {{- include "env.template" $data | indent 12}} # У env точка значит текущий итерируемый элемент
+            {{- end}}
+          resources:
+            limits: {{.Values.postgres.limits | toYML | nintent 14 }}
+          volumeMounts: # куда монтировать вольюмы в образе
+            - name: {{.Values.postgres.name}}-data # какой вольюм монтировать (из списка ниже)
+              mountPath: /var/lib/postgresql/data  # путь куда примонтировать итоговый вольюм
+              subPath: postgres # указывает в какую подпапку внутри вольюма разместить данные из /var/lib/postgresql/data для постгреса обязательно, а так нет.
+      volumes:
+        - name: "{{.Values.postgres.name}}-data" 
+          persistentVolumeClaim: 
+            claimName:  "{{.Values.postgres.name}}-pvc" # нэйм в ямле вольюма

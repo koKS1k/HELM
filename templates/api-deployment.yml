@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.api.name}}-deployment
+  namespace: my-namespace 
+spec: 
+  replicas: {{.Values.api.replicas}}
+  selector:
+    matchLabels:
+      components: {{.Values.api.components}}
+  template:
+    metadata:
+      labels:  
+        components: {{.Values.api.components}} #по лэйблу можно, например, привязать сервис (можно любой "asdf: terg")
+    spec:
+      containers:
+        - name: {{.Values.api.name}}
+          image: "{ .Values.api.image }}:{{ .Values.app.version }}"
+          imagePullPolicy: Always
+          ports:  
+            - containerPort: {{.Values.api.port}}
+          resources:
+            limits:  {{.Values.api.limits | toYML | nintent 14}}
+          env:
+            {{- range .Values.api.envs }}
+            {{- $data := dict "name" $.Values.api.name "env" .}} #dict  указывает что это словарь ключ значение ключи "name" "env".
+            {{- include "env.template" $data | indent 12}} # У env точка значит текущий итерируемый элемент
+            {{- end}}
+          livenessProbe: # проба для переодической проверки жизнеспособности приложения
+            exec: # есть разные способы, тут кидаем запрос через курл, т.к. домен локальный    
+              command: #описываем саму команду
+              - curl
+              - --fail # флаг курла, чтообы в случае неуспешного запроса всегда возвращать код отличнй от нуля
+              - http://localhost:3000/api
+            initialDelaySeconds: 30 #время для инициализации приложения
+            periodSeconds: 5 #как часто проверять приложение
+            failureThreshold: 1 #сколько допустимо ошибок, до того как мы скажем что контейнер не работает и будет перезапуск. 1 можно, больше авария.к
+ 

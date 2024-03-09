@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.app.name}}-deployment
+  namespace: my-namespace 
+spec: 
+  replicas: {{.Values.app.replicas}}
+  selector:
+    matchLabels:
+      components: {{.Values.app.components}}
+  template:
+    metadata:
+      labels:  
+        components: {{.Values.app.components}} #по лэйблу можно, например, привязать сервис (можно любой "asdf: terg")
+    spec:
+      containers:
+        - name: {{.Values.app.name}}
+          image: friendica:latest
+          imagePullPolicy: Always
+          ports:  
+            - containerPort: {{.Values.app.port}}
+          resources:
+            limits:  {{.Values.app.limits | toYML | nintent 14}}
+              
+# toYML
+# nintent
